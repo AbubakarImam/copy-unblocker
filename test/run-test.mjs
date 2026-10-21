@@ -48,6 +48,21 @@ await page.waitForTimeout(300);
 const on = await check(page);
 console.log("extension ON: ", on);
 
+// Select the KaTeX stand-in and the labelled image together, and check that
+// copying grabs the real TeX source and alt text, not the garbled spans.
+// (Done before the next check, which leaves a selection behind that the
+// extension's anti-wipe guard would stop us from clearing with JS.)
+const mathCopy = await page.evaluate(() => {
+  const range = document.createRange();
+  range.setStartBefore(document.getElementById("math"));
+  range.setEndAfter(document.getElementById("pic"));
+  getSelection().addRange(range);
+  const clipboardData = new DataTransfer();
+  document.dispatchEvent(new ClipboardEvent("copy", { clipboardData, bubbles: true, cancelable: true }));
+  return clipboardData.getData("text/plain");
+});
+console.log("math+image copy text:", JSON.stringify(mathCopy));
+
 // A real mouse selection, which the page tries to wipe every 500ms
 await page.click("#text", { clickCount: 3 });
 await page.waitForTimeout(700);
@@ -61,6 +76,7 @@ const ok =
   off.copyBlocked && // sanity check: the test page really does block things
   !on.copyBlocked && !on.cutBlocked && !on.pasteBlocked && !on.rightClickBlocked &&
   !on.selectBlocked && !on.ctrlCBlocked && on.cssUserSelect === "text" &&
-  selected.includes("Try to select");
+  selected.includes("Try to select") &&
+  mathCopy.includes("x^2 + 1") && mathCopy.includes("A scanned equation: y = mx + b");
 console.log(ok ? "PASS" : "FAIL");
 process.exit(ok ? 0 : 1);

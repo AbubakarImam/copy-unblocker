@@ -34,7 +34,7 @@ The extension has three small scripts:
 
 | File | Where it runs | What it does |
 | --- | --- | --- |
-| `src/page-patch.js` | Inside the web page, before the page's own scripts | Makes "cancel" do nothing for copy, cut, paste, right-click, text selection and Ctrl/Cmd+A/C/V/X. The page's code still runs, but its "no" is ignored. It also stops pages from wiping out your selection. |
+| `src/page-patch.js` | Inside the web page, before the page's own scripts | Makes "cancel" do nothing for copy, cut, paste, right-click, text selection and Ctrl/Cmd+A/C/V/X. The page's code still runs, but its "no" is ignored. It also stops pages from wiping out your selection, and fixes up copying math formulas and labelled images (see below). |
 | `src/content.js` | In the extension's private space on each page | Reads your settings, and when the site is switched on, marks the page and adds CSS that makes all text selectable again. |
 | `src/background.js` | In the background | Shows the green **ON** badge on the icon. |
 
@@ -44,9 +44,15 @@ If you know C#: an event here is a lot like a .NET event with a `CancelEventArgs
 
 `manifest.json` is the extension's settings file (a bit like a `.csproj`): it tells Chrome the extension's name, which scripts to run on which pages, and which permissions it needs. The only permission it asks for is `storage`, to remember your settings.
 
+## Math formulas and images
+
+Formulas drawn by **KaTeX** or **MathJax** aren't plain text on screen — they're lots of small positioned symbols, or vector paths — so a normal copy grabs nothing or garbled characters. Both libraries keep a hidden, screen-reader-only copy of the real formula in the page (KaTeX as MathML with the original TeX source attached; MathJax as `<mjx-assistive-mml>`). When you copy a selection that includes one of these, `page-patch.js` swaps it for that real text before the clipboard is written, so you get the TeX/MathML source instead of nonsense.
+
+The same trick applies to `<img alt="…">` text, and to SVGs or canvases that carry a `<title>`, `<desc>`, `<text>`, or `aria-label`/`title` — if the author described the picture for accessibility, copying a selection over it now includes that description.
+
 ## What it can't get around
 
-- Text that is really an **image** or drawn on a **canvas** isn't text, so there's nothing to copy.
+- A picture of text with **no alt text, title, or accessible description anywhere** — a plain scan or screenshot — has no text stored in the page at all, so there's nothing to recover. That would need OCR (reading the pixels and guessing the characters), which is a different kind of tool entirely.
 - A **transparent layer** placed over the text can stop your mouse reaching it. You can usually still use Ctrl+A then Ctrl+C, or right-click > Inspect.
 - Some sites serve scrambled text or special fonts so the copied text comes out as nonsense. No extension can fix that.
 

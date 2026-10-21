@@ -103,4 +103,90 @@
       return original.apply(this, arguments);
     };
   }
+
+  // 5. Math formulas (KaTeX, MathJax) and some SVGs/canvases aren't drawn as
+  // plain text: they're many small positioned spans or vector paths, so a
+  // normal copy grabs nothing or garbled symbols. But the real text is
+  // usually still in the DOM somewhere, kept for screen readers:
+  //   - KaTeX renders a hidden <math> (MathML) tree next to the visible one,
+  //     including the original TeX source in an <annotation>.
+  //   - MathJax (v3+) does the same with a hidden <mjx-assistive-mml>.
+  //   - Well-authored SVGs carry <title>/<desc>/<text>; canvases sometimes
+  //     carry aria-label/title.
+  //   - <img> alt text is the author's own description of the picture.
+  // When a copy happens, swap any of those elements inside the selection for
+  // their real text before letting the browser write the clipboard. Plain
+  // scanned/screenshotted text with none of the above has no recoverable
+  // text anywhere in the page, so there's nothing we can do about that case.
+  const extractMathText = (el) => {
+    const annotation = el.querySelector('annotation[encoding="application/x-tex"]');
+    if (annotation?.textContent) return annotation.textContent;
+    const mathml = el.querySelector("math");
+    if (mathml?.textContent) return mathml.textContent;
+    const assistive = el.querySelector("mjx-assistive-mml");
+    if (assistive?.textContent) return assistive.textContent;
+    return null;
+  };
+
+  const rewriteRichContent = (fragment) => {
+    let changed = false;
+
+    for (const el of fragment.querySelectorAll(".katex, mjx-container")) {
+      const text = extractMathText(el);
+      if (text == null) continue;
+      el.replaceWith(document.createTextNode(` ${text} `));
+      changed = true;
+    }
+
+    for (const img of fragment.querySelectorAll("img[alt]")) {
+      if (!img.alt) continue;
+      img.replaceWith(document.createTextNode(img.alt));
+      changed = true;
+    }
+
+    for (const svg of fragment.querySelectorAll("svg")) {
+      const label = svg.querySelector("title, desc")?.textContent?.trim();
+      const text = label || [...svg.querySelectorAll("text")].map((t) => t.textContent).join("");
+      if (!text.trim()) continue;
+      svg.replaceWith(document.createTextNode(text));
+      changed = true;
+    }
+
+    for (const canvas of fragment.querySelectorAll("canvas[aria-label], canvas[title]")) {
+      const label = canvas.getAttribute("aria-label") || canvas.getAttribute("title");
+      if (!label) continue;
+      canvas.replaceWith(document.createTextNode(label));
+      changed = true;
+    }
+
+    return changed ? fragment.textContent : null;
+  };
+
+  const serializeSelectionForCopy = (selection) => {
+    if (!selection || selection.rangeCount === 0) return null;
+    let changed = false;
+    const parts = [];
+    for (let i = 0; i < selection.rangeCount; i++) {
+      const fragment = selection.getRangeAt(i).cloneContents();
+      const rewritten = rewriteRichContent(fragment);
+      if (rewritten != null) changed = true;
+      parts.push(rewritten ?? fragment.textContent);
+    }
+    return changed ? parts.join("") : null;
+  };
+
+  window.addEventListener(
+    "copy",
+    (event) => {
+      if (!isOn() || !event.clipboardData) return;
+      const text = serializeSelectionForCopy(window.getSelection());
+      if (text == null) return;
+      event.clipboardData.setData("text/plain", text);
+      // Our own preventDefault() override (step 1) ignores calls on protected
+      // events, so reach past it to the real one to make this substitution
+      // stick instead of the browser's default (garbled) clipboard text.
+      originalPreventDefault.call(event);
+    },
+    true,
+  );
 })();

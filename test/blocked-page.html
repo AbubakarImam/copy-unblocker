@@ -11,6 +11,18 @@
   <h1>This page tries to block everything</h1>
   <p id="text">Try to select, copy or right-click this sentence.</p>
   <input id="box" placeholder="Try pasting here" onpaste="return false">
+
+  <!-- A trimmed-down stand-in for what KaTeX actually renders: a hidden,
+       screen-reader-only MathML tree (with the TeX source) next to the
+       visible-but-not-really-text spans users would otherwise select. -->
+  <p id="math" class="katex">
+    <span class="katex-mathml">
+      <math><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x^2 + 1</annotation></semantics></math>
+    </span>
+    <span class="katex-html" aria-hidden="true"><span>x</span><span>2</span></span>
+  </p>
+  <img id="pic" alt="A scanned equation: y = mx + b" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBTAA7">
+
   <script>
     // Every common trick at once
     document.addEventListener("copy", e => e.preventDefault());
