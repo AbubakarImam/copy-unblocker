@@ -1,0 +1,48 @@
+body {
+  width: 240px;
+  margin: 0;
+  padding: 14px 16px;
+  font: 14px/1.4 system-ui, sans-serif;
+  color: #1f2328;
+  background: #fff;
+}
+h1 { font-size: 16px; margin: 0 0 4px; }
+.host { margin: 0 0 12px; color: #59636e; word-break: break-all; }
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-top: 1px solid #e5e7eb;
+  cursor: pointer;
+}
+.note { margin: 10px 0 0; font-size: 12px; color: #59636e; }
+
+/* A checkbox drawn as an on/off switch */
+.switch {
+  appearance: none;
+  width: 36px; height: 20px;
+  border-radius: 10px;
+  background: #d0d7de;
+  position: relative;
+  cursor: pointer;
+  transition: background .15s;
+}
+.switch::after {
+  content: "";
+  position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left .15s;
+}
+.switch:checked { background: #1a7f37; }
+.switch:checked::after { left: 18px; }
+.switch:disabled { opacity: .5; cursor: default; }
+
+@media (prefers-color-scheme: dark) {
+  body { background: #1f2328; color: #e6edf3; }
+  .host, .note { color: #9198a1; }
+  .row { border-color: #3d444d; }
+  .switch { background: #3d444d; }
+}

@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Copy Unblocker test page</title>
+  <style>
+    body { font-family: sans-serif; max-width: 640px; margin: 40px auto; user-select: none; -webkit-user-select: none; }
+  </style>
+</head>
+<body oncopy="return false" oncontextmenu="return false" onselectstart="return false">
+  <h1>This page tries to block everything</h1>
+  <p id="text">Try to select, copy or right-click this sentence.</p>
+  <input id="box" placeholder="Try pasting here" onpaste="return false">
+  <script>
+    // Every common trick at once
+    document.addEventListener("copy", e => e.preventDefault());
+    document.addEventListener("cut", e => e.preventDefault());
+    document.addEventListener("paste", e => e.preventDefault());
+    document.addEventListener("contextmenu", e => { e.preventDefault(); return false; });
+    document.addEventListener("selectstart", e => e.preventDefault());
+    document.addEventListener("keydown", e => {
+      if ((e.ctrlKey || e.metaKey) && "acvx".includes(e.key.toLowerCase())) e.preventDefault();
+    });
+    window.oncontextmenu = () => false;
+    document.onkeydown = e => { if (e.ctrlKey && e.key === "c") { e.returnValue = false; } };
+    setInterval(() => window.getSelection().removeAllRanges(), 500);
+  </script>
+</body>
+</html>
